@@ -1,0 +1,89 @@
+---
+- name: "Install node_exporter"
+  hosts: app
+  become: true
+  tasks:
+  - name: Download node_exporter
+    get_url:
+      url: https://github.com/prometheus/node_exporter/releases/download/v1.12.1/node_exporter-1.12.1.linux-amd64.tar.gz
+      dest: /tmp/
+      
+
+  - name: Unarchive node_exporter
+    unarchive:
+      src: /tmp/node_exporter-1.12.1.linux-amd64.tar.gz
+      dest: /tmp/
+      remote_src: true
+      
+  - name: Copy node_exporter binary to destination folder
+    copy:
+      src: /tmp/node_exporter-1.12.1.linux-amd64/node_exporter
+      dest: /usr/local/bin/node_exporter
+      mode: 'u+x,g+x,o+x'
+      remote_src: true
+
+  - name: Start node_exporter
+    shell: nohup /usr/local/bin/node_exporter &
+
+- name: Install Prometheus & Grafana
+  hosts: monitoring
+  become: true
+  tasks:
+  - name: Download Prometheus
+    get_url:
+      url: https://github.com/prometheus/prometheus/releases/download/v3.14.0/prometheus-3.14.0.linux-amd64.tar.gz
+      dest: /tmp/
+      
+
+  - name: Unarchive Prometheus
+    unarchive:
+      src: /tmp/prometheus-3.14.0.linux-amd64.tar.gz
+      dest: /tmp/
+      remote_src: true
+      
+  - name: Copy Prometheus binary to destination folder
+    copy:
+      src: /tmp/prometheus-3.14.0.linux-amd64/prometheus
+      dest: /usr/local/bin/prometheus
+      mode: 'u+x,g+x,o+x'
+      remote_src: true
+
+  - name: Create prometheus config
+    copy:
+      dest: /usr/local/bin/prometheus.yml
+      content: |
+        global:
+          scrape_interval: 15s
+        scrape_configs:
+          - job_name: 'node_exporter'
+            static_configs:
+              - targets: ['10.0.1.88:9100']
+
+  - name: Run prometheus
+    shell: nohup /usr/local/bin/prometheus --config.file=/usr/local/bin/prometheus.yml &
+
+
+- name: Install grafana
+  hosts: monitoring
+  become: true
+  tasks:
+  - name: Download Grafana deb package
+    get_url:
+      url: https://dl.grafana.com/oss/release/grafana_10.4.0_amd64.deb
+      dest: /tmp/grafana.deb
+
+  - name: Install Grafana
+    apt:
+      deb: /tmp/grafana.deb
+      state: present
+
+  - name: Start Grafana
+    systemd:
+      name: grafana-server
+      state: started
+      enabled: yes
+
+
+                
+  
+
