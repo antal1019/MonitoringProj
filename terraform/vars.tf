@@ -11,11 +11,11 @@ variable "REGION" {
 }
 
 variable "AMI_ID" {
-  default = "ami-0b6d9d3d33ba97d99"
+  default = "ami-0f8a61b66d1accaee"
 }
 
 variable "INSTANCE_TYPE" {
-  default = "t2.micro"
+  default = "t3.micro"
 }
 
 variable "KEY_NAME" {
